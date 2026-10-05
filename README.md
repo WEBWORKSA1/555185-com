@@ -8,7 +8,7 @@
 - donation, contest, career, advertising and video pages
 - legal pages
 
-It runs on the **GitHub Pages free plan**: plain HTML, CSS and JS, with no build step needed on the server.
+It runs on the **GitHub Pages free plan**: plain HTML, CSS and JS. GitHub Pages' built-in Jekyll wraps each page in `_layouts/default.html` (shared head, top contact bar, header, footer, lead modal) and `_includes/sidebar.html`, so no workflow or paid plan is needed.
 
 ## Structure
 ```
@@ -26,7 +26,8 @@ assets/js/tools.js       tool user interfaces
 assets/js/app.js         nav, theme, forms, ads, video, modal, countdown
 assets/js/numdata.js     generated from _src/numdata.py
 assets/data/cny.json     Lunar New Year dates 1920–2045
-_src/ + build.py         page sources → `python3 build.py` regenerates every page and sitemap.xml
+_layouts/ · _includes/   shared shell (generated)
+_src/ + build.py         page sources → `python3 build.py` regenerates every page, layout, include and sitemap.xml
 project-docs/            RESEARCH.md (findings and decision) · BUILD-PROMPTS.md (phase-wise prompts)
 ```
 
