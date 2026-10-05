@@ -58,6 +58,7 @@ def build():
     for c in codes:
         rel = [x for x in codes if x["cat"] == c["cat"] and x["num"] != c["num"]][:6]
         if len(rel) < 4: rel += [x for x in codes if x["luck"] == c["luck"] and x not in rel and x["num"] != c["num"]][:6 - len(rel)]
+        if len(rel) < 3: rel += [x for x in codes if x not in rel and x["num"] != c["num"]][:6 - len(rel)]
         vt, vd = VERDICT[c["luck"]]
         rows = "".join(f'<tr><td><b>{ch}</b></td><td class="zh">{DIGITS[ch]["zh"]}</td><td>{DIGITS[ch]["py"]}</td><td>{esc(DIGITS[ch]["sounds"])}</td></tr>' for ch in dict.fromkeys(c["num"]))
         faqs = [(f"What does {c['num']} mean in Chinese?", f"{c['num']} means “{c['en']}” — it is read as {c['zh']} ({c['py']}). {first_sentence(c['desc'])}."),
