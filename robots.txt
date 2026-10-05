@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /thank-you.html
+Disallow: /_src/
+Sitemap: https://555185.com/sitemap.xml
