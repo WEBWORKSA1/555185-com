@@ -1,0 +1,5 @@
+# GitHub Pages (Jekyll) renders pages with _layouts/default.html
+title: "555185"
+exclude: [build.py, README.md, project-docs, _src, "*.py"]
+keep_files: []
+markdown: kramdown
