@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(HERE, "_src"))
 from numdata import DIGITS, CODES
 from greetings import GREETINGS
 import tools_pages, meanings, guides, pages
-from layout import DOMAIN
+from layout import DOMAIN, JEKYLL, layout_file, include_sidebar
 
 def w(rel, content):
     p = os.path.join(HERE, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -31,9 +31,13 @@ m, codes_full = meanings.build(); out += m
 out += guides.build()
 out += pages.build(codes_full, guides.G)
 
+if JEKYLL:
+    w("_layouts/default.html", layout_file())
+    w("_includes/sidebar.html", include_sidebar())
+    w("_config.yml", "# GitHub Pages (Jekyll) renders pages with _layouts/default.html\ntitle: \"555185\"\nexclude: [build.py, README.md, project-docs, _src, \"*.py\"]\nkeep_files: []\nmarkdown: kramdown\n")
 BASE404 = '<meta charset="utf-8">\n<script>document.write(\'<base href="\'+(location.pathname.indexOf("/555185-com/")===0?"/555185-com/":"/")+\'">\')</script>'
 for path, html in out:
-    if path == "404.html":
+    if path == "404.html" and not JEKYLL:
         html = html.replace('<meta charset="utf-8">', BASE404, 1).replace('data-root="./"', 'data-root=""')
     w(path, html)
 
@@ -46,19 +50,4 @@ for path, _ in out:
     urls.append(f"<url><loc>{u}</loc><lastmod>2026-10-05</lastmod><priority>{pr}</priority></url>")
 w("sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "\n".join(sorted(urls)) + "\n</urlset>\n")
 w("robots.txt", f"User-agent: *\nAllow: /\nDisallow: /thank-you.html\nDisallow: /_src/\nSitemap: {DOMAIN}/sitemap.xml\n")
-# Open Graph image (optional — needs Pillow)
-try:
-    from PIL import Image, ImageDraw, ImageFont
-    def font(sz):
-        for p in ["/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]:
-            if os.path.exists(p): return ImageFont.truetype(p, sz)
-        return ImageFont.load_default()
-    im = Image.new("RGB", (1200, 630), "#C8102E"); d = ImageDraw.Draw(im)
-    d.rectangle([30, 30, 1170, 600], outline="#E5C25A", width=6)
-    d.text((600, 230), "555185", font=font(170), fill="#FFD86B", anchor="mm")
-    d.text((600, 380), "Red envelopes · Lucky numbers · Number codes", font=font(44), fill="#FFFFFF", anchor="mm")
-    d.text((600, 470), "From 555 (tears) to 185 (fortune)", font=font(36), fill="#FFE8A3", anchor="mm")
-    os.makedirs(os.path.join(HERE, "assets/img"), exist_ok=True); im.save(os.path.join(HERE, "assets/img/og.png"))
-except Exception as e:
-    print("OG image skipped:", e)
 print(f"Built {len(out)} pages")

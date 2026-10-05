@@ -2,6 +2,7 @@ import json, html
 DOMAIN = "https://555185.com"
 PARTNER = "https://web.works/contact"
 UPDATED = "October 2026"
+JEKYLL = True  # emit Jekyll pages (front matter + body) using _layouts/default.html and _includes/sidebar.html
 
 NAV = [("tools/", "Tools"), ("meanings/", "Number Codes"), ("guides/", "Guides"), ("videos.html", "Videos"),
        ("contests.html", "Contests"), ("donate.html", "Donate")]
@@ -23,6 +24,11 @@ def lead_card(r, title="Get your free Hongbao Plan", sub="Personalised amounts f
 <button class="btn block" type="submit">Send my plan</button><p class="form-msg muted" style="font-size:.78rem;margin:0">No spam. Unsubscribe anytime.</p></form></div>'''
 
 def sidebar(r):
+    if JEKYLL and not r.startswith("{{"):
+        return '{% endraw %}{% include sidebar.html r="' + r + '" %}{% raw %}'
+    return sidebar_html(r)
+
+def sidebar_html(r):
     return f'''<aside class="side"><div class="sticky">{lead_card(r)}
 <div class="card"><h3>Popular tools</h3><ul>
 <li><a href="{r}tools/hongbao-calculator.html">Red envelope planner</a></li>
@@ -53,36 +59,56 @@ def page(path, title, desc, body, *, crumbs=None, ld=None, sticky=True, noexit=F
             items.append({"@type": "ListItem", "position": i + 2, "name": n, "item": DOMAIN + "/" + u if u else url})
         ld_all.append({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": items})
     if ld: ld_all += ld if isinstance(ld, list) else [ld]
-    cur = ' aria-current="page"'
-    nav = "".join(f'<a href="{r}{u}"{cur if path.startswith(u.rstrip("/")) else ""}>{n}</a>' for u, n in NAV)
     crumb_html = ""
     if crumbs:
         parts = [f'<a href="{r}">Home</a>'] + [f'<a href="{r}{u}">{esc(n)}</a>' if u else esc(n) for u, n in crumbs]
         crumb_html = '<nav class="crumbs" aria-label="Breadcrumb">' + " › ".join(parts) + "</nav>"
     body = body.replace("{{CRUMBS}}", crumb_html).replace("{{R}}", r)
-    sticky_html = f'<div class="sticky-cta" role="complementary"><span>🧧 Free 2027 red-envelope cheat sheet</span><a class="btn sm gold" href="#" data-open-modal>Get it</a><button aria-label="Dismiss">✕</button></div>' if sticky else ""
+    ld_script = '<script type="application/ld+json">' + json.dumps(ld_all, ensure_ascii=False) + '</script>'
+    section = next((u.rstrip("/") for u, n in NAV if path.startswith(u.rstrip("/"))), "")
+    if JEKYLL:
+        fm = dict(layout="default", title=title, description=desc, canonical=url, r=("" if path == "404.html" else r), og_type=og_type,
+                  sticky=sticky, noexit=noexit, section=section, is404=(path == "404.html"))
+        return "---\n" + "".join(f"{k}: {json.dumps(v, ensure_ascii=False)}\n" for k, v in fm.items()) + "---\n{% raw %}" + ld_script + "\n" + body + "{% endraw %}\n"
+    cur = ' aria-current="page"'
+    nav = "".join(f'<a href="{r}{u}"{cur if u.rstrip("/") == section else ""}>{n}</a>' for u, n in NAV)
+    sticky_html = STICKY if sticky else ""
+    return shell(r, esc(title), esc(desc), url, og_type, ld_script, nav, body, sticky_html, " data-no-exit" if noexit else "", "")
+
+STICKY = '<div class="sticky-cta" role="complementary"><span>🧧 Free 2027 red-envelope cheat sheet</span><a class="btn sm gold" href="#" data-open-modal>Get it</a><button aria-label="Dismiss">✕</button></div>'
+
+def layout_file():
+    nav = "".join(f'<a href="{{{{ page.r }}}}{u}"{{% if page.section == "{u.rstrip("/")}" %}} aria-current="page"{{% endif %}}>{n}</a>' for u, n in NAV)
+    base404 = '{% if page.is404 %}<script>document.write(\'<base href="\'+(location.pathname.indexOf("/555185-com/")===0?"/555185-com/":"/")+\'">\')</script>{% endif %}'
+    return shell("{{ page.r }}", "{{ page.title | escape }}", "{{ page.description | escape }}", "{{ page.canonical }}", "{{ page.og_type }}", "",
+                 nav, "{{ content }}", "{% if page.sticky %}" + STICKY + "{% endif %}", "{% if page.noexit %} data-no-exit{% endif %}", base404)
+
+def include_sidebar():
+    return sidebar_html("{{ include.r }}")
+
+def shell(r, title, desc, url, og_type, ld_script, nav, body, sticky_html, noexit_attr, head_extra):
     return f'''<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8">{head_extra}
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{esc(title)}</title>
-<meta name="description" content="{esc(desc)}">
+<title>{title}</title>
+<meta name="description" content="{desc}">
 <link rel="canonical" href="{url}">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <meta property="og:type" content="{og_type}"><meta property="og:site_name" content="555185">
-<meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">
-<meta property="og:url" content="{url}"><meta property="og:image" content="{DOMAIN}/assets/img/og.png">
-<meta name="twitter:card" content="summary_large_image">
+<meta property="og:title" content="{title}"><meta property="og:description" content="{desc}">
+<meta property="og:url" content="{url}">
+<meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#C8102E">
 <link rel="icon" href="{r}assets/img/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="{r}site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{r}assets/css/style.css">
-<script type="application/ld+json">{json.dumps(ld_all, ensure_ascii=False)}</script>
+{ld_script}
 </head>
-<body data-root="{r}"{" data-no-exit" if noexit else ""}>
+<body data-root="{r}"{noexit_attr}>
 <a class="skip" href="#main">Skip to content</a>
 <div class="topbar">Contact, if you are interested in this website / domain name / Sponsorship / Advertisement / Partnership — <a href="{PARTNER}" target="_blank" rel="noopener">web.works/contact</a></div>
 <header class="hdr"><div class="wrap">
