@@ -1,5 +1,9 @@
 from layout import page, ad, sidebar, faq_html, faq_ld, esc
 from numdata import DIGITS, CODES
+import re
+
+def first_sentence(t):
+    return re.split(r"(?<!e\.g)(?<!i\.e)\. ", t, maxsplit=1)[0].rstrip(".")
 
 VERDICT = {
  "lucky": ("✅ Great for gifts, prices & numbers", "This is a positive number in Chinese culture — safe and welcome as a red-envelope amount, price ending, phone number or plate."),
@@ -44,7 +48,7 @@ def build():
 <div class="note"><b>{vt}</b><br>{vd}</div>{ad("inarticle")}
 <h2>Codes that contain {d}</h2><div class="num-grid">{"".join(f'<a class="num-card" href="{c["num"]}.html"><b>{c["num"]}</b><span>{esc(c["en"])}</span></a>' for c in rel) or "<p>None in the dictionary yet.</p>"}</div>
 <h2>FAQ</h2>{faq_html(faqs)}'''
-        body = f'''<div class="wrap page-hero">{{{{CRUMBS}}}}<span class="eyebrow">Digit</span><h1>Number {d} in Chinese: {v["zh"]} ({v["py"]})</h1><p class="lead">{esc(v["note"].split(". ")[0])}.</p></div>
+        body = f'''<div class="wrap page-hero">{{{{CRUMBS}}}}<span class="eyebrow">Digit</span><h1>Number {d} in Chinese: {v["zh"]} ({v["py"]})</h1><p class="lead">{esc(first_sentence(v["note"]))}.</p></div>
 <div class="wrap layout"><article class="prose">{content}</article>{sidebar(r)}</div>'''
         out.append((f"meanings/{d}.html", page(f"meanings/{d}.html", f"Number {d} Meaning in Chinese ({v['zh']} {v['py']}) — Lucky or Unlucky? | 555185",
             f"What does {d} mean in Chinese? {v['zh']} ({v['py']}) sounds like {v['sounds']}. Luck, culture and codes that use {d}.", body,
@@ -56,7 +60,7 @@ def build():
         if len(rel) < 4: rel += [x for x in codes if x["luck"] == c["luck"] and x not in rel and x["num"] != c["num"]][:6 - len(rel)]
         vt, vd = VERDICT[c["luck"]]
         rows = "".join(f'<tr><td><b>{ch}</b></td><td class="zh">{DIGITS[ch]["zh"]}</td><td>{DIGITS[ch]["py"]}</td><td>{esc(DIGITS[ch]["sounds"])}</td></tr>' for ch in dict.fromkeys(c["num"]))
-        faqs = [(f"What does {c['num']} mean in Chinese?", f"{c['num']} means “{c['en']}” — it is read as {c['zh']} ({c['py']}). {c['desc'].split('. ')[0]}."),
+        faqs = [(f"What does {c['num']} mean in Chinese?", f"{c['num']} means “{c['en']}” — it is read as {c['zh']} ({c['py']}). {first_sentence(c['desc'])}."),
                 (f"Can I use {c['num']} as a red envelope amount?", f"{vt.split(' ',1)[1]}. {vd}"),
                 (f"How do you pronounce {c['num']}?", f"Digit by digit in Mandarin: {' '.join(DIGITS[ch]['py'].split(' / ')[0] for ch in c['num'])}. The phrase it imitates is {c['zh']} ({c['py']}).")]
         story = '<p><a class="btn" href="../the-555185-story.html">Read the full 555185 story</a></p>' if c["num"] in ("555", "185", "555185") else ""
